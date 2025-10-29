@@ -70,3 +70,43 @@ button {
 .spades, .clubs {
   color: black;
 }
+
+#table {
+  position: relative;
+  width: 100%;
+  min-height: 180px;
+  margin-top: 20px;
+  background: linear-gradient(180deg, #35654d, #254d38);
+  border-radius: 10px;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+  padding: 10px;
+  text-align: center;
+  color: white;
+}
+
+.turn-info {
+  margin-bottom: 10px;
+  font-weight: bold;
+  font-size: 16px;
+  color: #fff;
+}
+
+.played-cards-row {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: nowrap;
+}
+
+.played-card-horizontal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.player-name {
+  color: #fff;
+  font-size: 13px;
+  margin-bottom: 5px;
+}

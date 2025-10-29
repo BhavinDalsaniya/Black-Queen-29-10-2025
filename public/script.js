@@ -64,25 +64,32 @@ socket.on("yourCards", (cards) => {
 });
 
 // ✅ Update game state (turns, table)
+// ✅ Update game state (turns, table)
 socket.on("gameState", (state) => {
-  tableDiv.innerHTML = `<div>Turn: ${getPlayerName(state.currentTurnPlayerId)}</div>`;
+  // Clear old table and show whose turn it is
+  tableDiv.innerHTML = `<div class="turn-info">Turn: ${getPlayerName(state.currentTurnPlayerId)}</div>`;
 
+  // Show currently played cards in one horizontal line
   if (state.trick && state.trick.length) {
-    const html = state.trick
-      .map(
-        (t) => `
-          <div class="played-card">
-            <strong>${getPlayerName(t.playerId)}:</strong>
-            ${renderCard(t.card)}
-          </div>
-        `
-      )
-      .join("");
-    tableDiv.innerHTML += html;
+    const cardsRow = document.createElement("div");
+    cardsRow.className = "played-cards-row";
+
+    state.trick.forEach((t) => {
+      const wrapper = document.createElement("div");
+      wrapper.classList.add("played-card-horizontal");
+      wrapper.innerHTML = `
+        <div class="player-name">${getPlayerName(t.playerId)}</div>
+        ${renderCard(t.card)}
+      `;
+      cardsRow.appendChild(wrapper);
+    });
+
+    tableDiv.appendChild(cardsRow);
   }
 
   renderScoreboard(state.players);
 });
+
 
 // ✅ Card played event
 socket.on("cardPlayed", ({ playerId, card }) => {
