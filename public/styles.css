@@ -41,3 +41,32 @@ button {
 .card-item:hover {
   background: #ffb703;
 }
+
+.card {
+  width: 70px;
+  height: 100px;
+  border-radius: 10px;
+  background: white;
+  border: 2px solid #333;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 26px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 2px 2px 6px rgba(0,0,0,0.2);
+  transition: transform 0.2s ease;
+  user-select: none;
+}
+
+.card:hover {
+  transform: scale(1.1);
+}
+
+.hearts, .diamonds {
+  color: red;
+}
+
+.spades, .clubs {
+  color: black;
+}
