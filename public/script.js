@@ -87,9 +87,10 @@ socket.on("gameState", (state) => {
 // ✅ Card played event
 socket.on("cardPlayed", ({ playerId, card }) => {
   const d = document.createElement("div");
-  d.innerHTML = `<strong>${getPlayerName(playerId)}</strong> played ${renderCard(card)}`;
+  d.textContent = `${getPlayerName(playerId)} played ${card}`;
   messagesDiv.appendChild(d);
 });
+
 
 // ✅ Trick won event
 socket.on("trickWon", ({ winnerId, taken }) => {
