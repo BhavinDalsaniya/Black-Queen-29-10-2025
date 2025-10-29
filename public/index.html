@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>♠️ Black Queen ♥️</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <div id="lobby">
+    <h1>Black Queen</h1>
+    <input id="nameInput" placeholder="Enter your name" />
+    <button id="joinBtn">Join Game</button>
+  </div>
+
+  <div id="game" class="hidden">
+    <div id="players" class="players"></div>
+    <div id="scoreboard" class="scoreboard"></div>
+    <div id="table" class="table"></div>
+    <div id="hand" class="hand"></div>
+    <div id="messages" class="messages"></div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

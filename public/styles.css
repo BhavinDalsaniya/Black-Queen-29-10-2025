@@ -1,0 +1,43 @@
+body {
+  font-family: Arial, sans-serif;
+  background: #023047;
+  color: white;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+}
+
+.hidden {
+  display: none;
+}
+
+button {
+  background: #ffb703;
+  border: none;
+  color: black;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-weight: bold;
+  border-radius: 8px;
+}
+
+.players, .scoreboard, .table, .hand, .messages {
+  margin: 20px;
+  padding: 10px;
+  background: #219ebc;
+  border-radius: 10px;
+}
+
+.card-item {
+  display: inline-block;
+  margin: 5px;
+  padding: 10px 15px;
+  background: #8ecae6;
+  color: black;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.card-item:hover {
+  background: #ffb703;
+}
