@@ -65,11 +65,14 @@ socket.on("yourCards", (cards) => {
 
 // ✅ Update game state (turns, table)
 // ✅ Update game state (turns, table)
+// ✅ Update game state (turns, table)
 socket.on("gameState", (state) => {
-  // Clear old table and show whose turn it is
-  tableDiv.innerHTML = `<div class="turn-info">Turn: ${getPlayerName(state.currentTurnPlayerId)}</div>`;
+  const currentTurnId = state.currentTurnPlayerId;
 
-  // Show currently played cards in one horizontal line
+  // Turn Info
+  tableDiv.innerHTML = `<div class="turn-info">Turn: ${getPlayerName(currentTurnId)}</div>`;
+
+  // Played cards in horizontal layout
   if (state.trick && state.trick.length) {
     const cardsRow = document.createElement("div");
     cardsRow.className = "played-cards-row";
@@ -87,8 +90,10 @@ socket.on("gameState", (state) => {
     tableDiv.appendChild(cardsRow);
   }
 
-  renderScoreboard(state.players);
+  // Update scoreboard with highlight
+  renderScoreboard(state.players, currentTurnId);
 });
+
 
 
 // ✅ Card played event
@@ -145,15 +150,23 @@ function renderHand() {
 }
 
 // ✅ Render scoreboard (bottom horizontal bar)
-function renderScoreboard(players) {
+function renderScoreboard(players, currentTurnId = null) {
   scoreboardDiv.innerHTML = "";
-  for (const p of players) {
+
+  players.forEach((p) => {
     const el = document.createElement("div");
-    el.className = "card-item";
+    el.className = "scoreboard-player";
     el.textContent = `${p.name}: ${p.totalScore || p.score || 0}`;
+
+    // 🔥 Highlight the current player's turn
+    if (p.id === currentTurnId) {
+      el.classList.add("active-player");
+    }
+
     scoreboardDiv.appendChild(el);
-  }
+  });
 }
+
 
 // ✅ Play card action
 function playCard(card) {

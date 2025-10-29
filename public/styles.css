@@ -110,3 +110,22 @@ button {
   font-size: 13px;
   margin-bottom: 5px;
 }
+
+.scoreboard-player {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  padding: 6px 12px;
+  margin: 4px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.scoreboard-player.active-player {
+  background: gold;
+  color: black;
+  font-weight: bold;
+  box-shadow: 0 0 10px gold;
+  transform: scale(1.05);
+}
