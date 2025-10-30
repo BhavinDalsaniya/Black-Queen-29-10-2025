@@ -198,8 +198,8 @@ button:disabled {
 .card-item {
   display: inline-block;
   margin: 5px;
-  padding: 10px 15px;
-  background: rgba(255, 255, 255, 0.15);
+  /* padding: 10px 15px; */
+  /* background: rgba(255, 255, 255, 0.15); */
   color: var(--text-light);
   border-radius: 8px;
   cursor: pointer;
