@@ -71,7 +71,7 @@ socket.on("playerList", (list) => {
   for (const p of list) {
     playersMap[p.id] = p;
     const d = document.createElement("div");
-    d.textContent = `${p.name} — ${p.score || 0} pts`;
+    d.textContent = `${p.name} — ${p.totalScore || 0} pts`;  // Use totalScore for cumulative points
     playersDiv.appendChild(d);
   }
   renderScoreboard(list);
@@ -136,7 +136,7 @@ socket.on("gameState", (state) => {
 
 // ✅ Card played event
 socket.on("cardPlayed", ({ playerId, card }) => {
-  addMessage(`${getPlayerName(playerId)} played ${card}`);
+  // addMessage(`${getPlayerName(playerId)} played ${card}`);
 });
 
 // ✅ Trick won event
