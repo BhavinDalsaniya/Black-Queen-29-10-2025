@@ -160,7 +160,7 @@ function calculatePoints(plays) {
     if (!card || typeof card !== "string") return total;
     
     if (card.endsWith(" of Hearts")) total += 1;
-    if (card === "Q of Spades" || card === "Queen of Spades") total += 13;
+    if (card === "Q of Spades" || card === "Queen of Spades") total += 12;
     
     return total;
   }, 0);
