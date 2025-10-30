@@ -232,7 +232,24 @@ button:disabled {
   transition: all 0.2s ease;
   user-select: none;
   margin: 5px;
-  font-size: 24px;
+}
+
+.card-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.card-rank {
+  font-size: 40px;
+  line-height: 1;
+}
+
+.card-suit {
+  font-size: 36px;
+  line-height: 1;
+}
 }
 
 .card:hover {
@@ -260,7 +277,14 @@ button:disabled {
 .hand.pattern-grid .card {
   width: 44px;
   height: 66px;
-  font-size: 16px;
+}
+
+.hand.pattern-grid .card .card-rank {
+  font-size: 24px;
+}
+
+.hand.pattern-grid .card .card-suit {
+  font-size: 20px;
 }
 
 /* Game table area - more realistic felt */

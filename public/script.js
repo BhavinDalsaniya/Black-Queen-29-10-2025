@@ -48,7 +48,10 @@ function renderCard(cardName) {
   const suitSymbol = suitSymbols[suitName] || "";
 
   return `<div class="card ${suitName?.toLowerCase() || ''}">
-    <div class="card-content">${rank} ${suitSymbol}</div>
+    <div class="card-content">
+      <div class="card-rank">${rank}</div>
+      <div class="card-suit">${suitSymbol}</div>
+    </div>
   </div>`;
 }
 
