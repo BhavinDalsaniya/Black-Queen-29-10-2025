@@ -71,7 +71,7 @@ socket.on("playerList", (list) => {
   for (const p of list) {
     playersMap[p.id] = p;
     const d = document.createElement("div");
-    d.textContent = `${p.name} — ${p.totalScore || 0} pts`;  // Use totalScore for cumulative points
+   // d.textContent = `${p.name} — ${p.totalScore || 0} pts`;  // Use totalScore for cumulative points
     playersDiv.appendChild(d);
   }
   renderScoreboard(list);
@@ -157,13 +157,13 @@ socket.on("roundEnd", (data) => {
 
   // ✅ Update header scores after each round
   const headerDiv = document.getElementById("header-scores");
-  if (headerDiv) {
-    headerDiv.innerHTML = data.players
-      .map(
-        (p) => `<div><strong>${p.name}</strong>: ${p.totalScore} pts</div>`
-      )
-      .join("");
-  }
+  // if (headerDiv) {
+  //   headerDiv.innerHTML = data.players
+  //     .map(
+  //       (p) => `<div><strong>${p.name}</strong>: ${p.totalScore} pts</div>`
+  //     )
+  //     .join("");
+  // }
 
   // 🔥 BUG FIX: Update the main scoreboard after round ends
   renderScoreboard(data.players);
