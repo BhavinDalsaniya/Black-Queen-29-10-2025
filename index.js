@@ -20,11 +20,11 @@ let round = 1;
 io.on("connection", (socket) => {
   socket.on("join", (name, callback) => {
     if (players.length >= 4) return callback({ error: "Room full" });
-
     players.push({ id: socket.id, name, hand: [], score: 0 });
     scores[socket.id] = scores[socket.id] || 0;
 
-    io.emit("playerList", players);
+    // Emit only sanitized player info (no full hands) to reduce bandwidth
+    io.emit("playerList", sanitizePlayers());
     callback({ id: socket.id });
 
     if (players.length === 4) startGame();
@@ -115,21 +115,19 @@ function endTrick() {
   winner.score += points;
   scores[winner.id] += points;
 
-  io.emit("trickWon", { winnerId: winner.id, taken: table.map(t => t.card) });
+  io.emit("trickWon", { winnerId: winner.id, taken: table.map((t) => t.card) });
 
-  // 🧩 Immediately broadcast updated scores
-  updateGameState();
-
-  // Reset trick
+  // Reset trick and set next turn to winner
   table = [];
   leadingSuit = null;
   currentTurn = players.findIndex((p) => p.id === winner.id);
 
+  // Broadcast state once (sanitized players) to reduce duplicate emits
+  updateGameState();
+
   // If all cards played, round ends
   if (players.every((p) => p.hand.length === 0)) {
     endRound();
-  } else {
-    updateGameState();
   }
 }
 
@@ -141,8 +139,9 @@ function calculatePoints(cards) {
 
     if (!c || typeof c !== "string") continue;
 
-    if (c.endsWith("Hearts")) pts += 1;
-    if (c.includes("Queen of Spades") || c.includes("Q of Spades")) pts += 12;
+    // Deck entries are like "Q of Spades" and "10 of Hearts"
+    if (c.endsWith(" of Hearts")) pts += 1;
+    if (c === "Q of Spades" || c === "Queen of Spades") pts += 12;
   }
 
   return pts;
@@ -176,9 +175,23 @@ function endRound() {
 function updateGameState() {
   io.emit("gameState", {
     currentTurnPlayerId: players[currentTurn]?.id,
-    players,
+    // Send only sanitized player data to clients (no hands)
+    players: sanitizePlayers(),
     trick: table,
   });
+}
+
+// Return a lightweight view of players to avoid sending full hands to all clients
+function sanitizePlayers() {
+  return players.map((p) => ({
+    id: p.id,
+    name: p.name,
+    // per-round score
+    score: p.score,
+    // cumulative total score across rounds
+    totalScore: scores[p.id] || 0,
+    handCount: Array.isArray(p.hand) ? p.hand.length : 0,
+  }));
 }
 
 function resetGame() {
