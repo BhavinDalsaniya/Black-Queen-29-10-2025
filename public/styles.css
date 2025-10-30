@@ -21,13 +21,18 @@ button {
   border-radius: 8px;
 }
 
+/* Common section styling */
 .players, .scoreboard, .table, .hand, .messages {
-  margin: 20px;
+  margin: 20px auto;
   padding: 10px;
   background: #219ebc;
   border-radius: 10px;
+  width: 90%;
+  max-width: 800px;
+  box-sizing: border-box;
 }
 
+/* Card items */
 .card-item {
   display: inline-block;
   margin: 5px;
@@ -42,6 +47,7 @@ button {
   background: #ffb703;
 }
 
+/* Card styling */
 .card {
   width: 70px;
   height: 100px;
@@ -63,6 +69,7 @@ button {
   transform: scale(1.1);
 }
 
+/* Suit colors */
 .hearts, .diamonds {
   color: red;
 }
@@ -71,19 +78,23 @@ button {
   color: black;
 }
 
+/* Game table area */
 #table {
   position: relative;
-  width: 100%;
   min-height: 180px;
-  margin-top: 20px;
   background: linear-gradient(180deg, #35654d, #254d38);
   border-radius: 10px;
   box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
   padding: 10px;
   text-align: center;
   color: white;
+  width: 90%;
+  max-width: 800px;
+  margin: 20px auto;
+  box-sizing: border-box;
 }
 
+/* Turn info */
 .turn-info {
   margin-bottom: 10px;
   font-weight: bold;
@@ -91,6 +102,7 @@ button {
   color: #fff;
 }
 
+/* Played cards layout */
 .played-cards-row {
   display: flex;
   justify-content: center;
@@ -111,6 +123,7 @@ button {
   margin-bottom: 5px;
 }
 
+/* Scoreboard styling */
 .scoreboard-player {
   display: inline-block;
   background: rgba(255, 255, 255, 0.1);
