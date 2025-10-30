@@ -3,24 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Play Black Queen card game online with friends">
+  <meta name="theme-color" content="#000000">
   <title>♠️ Black Queen ♥️</title>
   <link rel="stylesheet" href="styles.css">
   <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-  <div id="lobby">
+  <div id="lobby" role="main" aria-label="Game Lobby">
     <h1>Bhavin Creation : Black Queen</h1>
-    <input id="nameInput" placeholder="Enter your name" />
-    <button id="joinBtn">Join Game</button>
+    <input id="nameInput" placeholder="Enter your name" aria-label="Enter your name" />
+    <button id="joinBtn" aria-label="Join the game">Join Game</button>
   </div>
 
-  <div id="game" class="hidden">
-    <div id="players" class="players"></div>
-    <div id="scoreboard" class="scoreboard"></div>
-    <div id="table" class="table"></div>
-    <div id="hand" class="hand"></div>
-    <div id="messages" class="messages"></div>
+  <div id="game" class="hidden" role="main" aria-label="Game Area">
+    <div id="players" class="players" aria-label="Players information"></div>
+    <div id="scoreboard" class="scoreboard" aria-label="Scoreboard"></div>
+    <div id="table" class="table" aria-label="Game table"></div>
+    <div id="hand" class="hand" aria-label="Your cards"></div>
+    <div id="messages" class="messages" aria-label="Game messages"></div>
   </div>
+
+  <div id="loading" class="hidden">Loading...</div>
 
   <script src="script.js"></script>
 </body>

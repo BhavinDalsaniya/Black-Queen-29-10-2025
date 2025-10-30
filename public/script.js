@@ -4,6 +4,7 @@ let myHand = [];
 let playersList = [];
 // map id -> {id,name,score,handCount}
 let playersMap = {};
+const playerNameCache = new Map(); // Cache for player names
 
 const joinBtn = document.getElementById("joinBtn");
 const nameInput = document.getElementById("nameInput");
@@ -14,6 +15,7 @@ const gameDiv = document.getElementById("game");
 const handDiv = document.getElementById("hand");
 const tableDiv = document.getElementById("table");
 const scoreboardDiv = document.getElementById("scoreboard");
+
 // Reusable elements for the center play area to avoid rebuilding the container
 const turnInfoEl = document.createElement("div");
 turnInfoEl.className = "turn-info";
@@ -22,16 +24,28 @@ cardsRowEl.className = "played-cards-row";
 tableDiv.appendChild(turnInfoEl);
 tableDiv.appendChild(cardsRowEl);
 
+// Performance optimization variables
+let renderHandTimeout = null;
+let lastRenderedPlayers = null;
+let messageBatch = [];
+let messageBatchTimeout = null;
+
+// ✅ Pre-compiled suit symbols
+const suitSymbols = {
+  'Hearts': '♥',
+  'Spades': '♠', 
+  'Clubs': '♣',
+  'Diamonds': '♦'
+};
+
 // ✅ Helper to render visual cards (hearts red, spades black, etc.)
 function renderCard(cardName) {
   if (!cardName) return "";
 
-  const [rank, , suitName] = cardName.split(" ");
-  const suitSymbol =
-    suitName === "Hearts" ? "♥" :
-    suitName === "Spades" ? "♠" :
-    suitName === "Clubs" ? "♣" :
-    suitName === "Diamonds" ? "♦" : "";
+  const parts = cardName.split(" ");
+  const rank = parts[0];
+  const suitName = parts[2];
+  const suitSymbol = suitSymbols[suitName] || "";
 
   return `<div class="card ${suitName?.toLowerCase() || ''}">${rank}${suitSymbol}</div>`;
 }
@@ -52,6 +66,7 @@ socket.on("playerList", (list) => {
   playersList = list;
   // Build a quick lookup map for fast name/score access
   playersMap = {};
+  playerNameCache.clear(); // Clear cache on player updates
   playersDiv.innerHTML = "";
   for (const p of list) {
     playersMap[p.id] = p;
@@ -62,14 +77,29 @@ socket.on("playerList", (list) => {
   renderScoreboard(list);
 });
 
+// ✅ Batch message handler
+function addMessage(text) {
+  messageBatch.push(text);
+  
+  if (!messageBatchTimeout) {
+    messageBatchTimeout = setTimeout(() => {
+      const frag = document.createDocumentFragment();
+      messageBatch.forEach(txt => {
+        const d = document.createElement("div");
+        d.textContent = txt;
+        frag.appendChild(d);
+      });
+      messagesDiv.appendChild(frag);
+      trimMessages(100);
+      
+      messageBatch = [];
+      messageBatchTimeout = null;
+    }, 50);
+  }
+}
+
 // ✅ Message updates
-socket.on("message", (txt) => {
-  const d = document.createElement("div");
-  d.textContent = txt;
-  messagesDiv.appendChild(d);
-  // Keep messages bounded to avoid memory/DOM blowup
-  trimMessages(100);
-});
+socket.on("message", addMessage);
 
 // ✅ Receive initial hand
 socket.on("yourCards", (cards) => {
@@ -77,8 +107,6 @@ socket.on("yourCards", (cards) => {
   renderHand();
 });
 
-// ✅ Update game state (turns, table)
-// ✅ Update game state (turns, table)
 // ✅ Update game state (turns, table)
 socket.on("gameState", (state) => {
   const currentTurnId = state.currentTurnPlayerId;
@@ -106,24 +134,14 @@ socket.on("gameState", (state) => {
   renderScoreboard(state.players, currentTurnId);
 });
 
-
-
 // ✅ Card played event
 socket.on("cardPlayed", ({ playerId, card }) => {
-  const d = document.createElement("div");
-  d.textContent = `${getPlayerName(playerId)} played ${card}`;
-  messagesDiv.appendChild(d);
-  trimMessages(100);
+  addMessage(`${getPlayerName(playerId)} played ${card}`);
 });
-
 
 // ✅ Trick won event
 socket.on("trickWon", ({ winnerId, taken }) => {
-  const d = document.createElement("div");
-  d.textContent = `${getPlayerName(winnerId)} won the trick (${taken.join(", ")})`;
-  messagesDiv.appendChild(d);
-  // Keep messages bounded when tricks finish
-  trimMessages(100);
+  addMessage(`${getPlayerName(winnerId)} won the trick (${taken.join(", ")})`);
 });
 
 // ✅ Round end event
@@ -146,6 +164,9 @@ socket.on("roundEnd", (data) => {
       )
       .join("");
   }
+
+  // 🔥 BUG FIX: Update the main scoreboard after round ends
+  renderScoreboard(data.players);
 });
 
 // ✅ Reset
@@ -154,24 +175,39 @@ socket.on("reset", () => {
   location.reload();
 });
 
-// ✅ Render player hand visually
+// ✅ Render player hand visually with debouncing
 function renderHand() {
-  // Use a fragment to minimize reflows
-  handDiv.innerHTML = "";
-  const frag = document.createDocumentFragment();
-  for (const c of myHand) {
-    const el = document.createElement("div");
-    el.className = "card-item";
-    el.innerHTML = renderCard(c);
-    el.onclick = () => playCard(c);
-    frag.appendChild(el);
+  // Debounce rapid re-renders
+  if (renderHandTimeout) {
+    clearTimeout(renderHandTimeout);
   }
-  handDiv.appendChild(frag);
+  
+  renderHandTimeout = setTimeout(() => {
+    handDiv.innerHTML = "";
+    const frag = document.createDocumentFragment();
+    for (const c of myHand) {
+      const el = document.createElement("div");
+      el.className = "card-item";
+      el.innerHTML = renderCard(c);
+      el.onclick = () => playCard(c);
+      frag.appendChild(el);
+    }
+    handDiv.appendChild(frag);
+    renderHandTimeout = null;
+  }, 16); // ~60fps
 }
 
-// ✅ Render scoreboard (bottom horizontal bar)
+// ✅ Render scoreboard (bottom horizontal bar) with change detection
 function renderScoreboard(players, currentTurnId = null) {
+  // Avoid re-rendering if data hasn't changed
+  const playersKey = JSON.stringify(players) + currentTurnId;
+  if (lastRenderedPlayers === playersKey) return;
+  
+  lastRenderedPlayers = playersKey;
+
   scoreboardDiv.innerHTML = "";
+  const frag = document.createDocumentFragment();
+  
   players.forEach((p) => {
     const el = document.createElement("div");
     el.className = "scoreboard-player";
@@ -188,10 +224,11 @@ function renderScoreboard(players, currentTurnId = null) {
       el.classList.add("active-player");
     }
 
-    scoreboardDiv.appendChild(el);
+    frag.appendChild(el);
   });
+  
+  scoreboardDiv.appendChild(frag);
 }
-
 
 // ✅ Play card action
 function playCard(card) {
@@ -202,14 +239,26 @@ function playCard(card) {
   });
 }
 
-// ✅ Helper to get player name
+// ✅ Optimized helper to get player name with caching
 function getPlayerName(id) {
+  if (playerNameCache.has(id)) {
+    return playerNameCache.get(id);
+  }
+  
   const p = playersMap[id] || playersList.find((x) => x.id === id);
-  return p ? p.name : id;
+  const name = p ? p.name : id;
+  playerNameCache.set(id, name);
+  return name;
 }
 
+// ✅ Efficient message trimming
 function trimMessages(max) {
-  while (messagesDiv.children.length > max) {
-    messagesDiv.removeChild(messagesDiv.firstChild);
+  const excess = messagesDiv.children.length - max;
+  if (excess > 0) {
+    for (let i = 0; i < excess; i++) {
+      if (messagesDiv.firstChild) {
+        messagesDiv.removeChild(messagesDiv.firstChild);
+      }
+    }
   }
 }

@@ -9,50 +9,63 @@ const io = new Server(server);
 
 app.use(express.static("public"));
 
-let players = [];
-let currentTurn = 0;
-let gameInProgress = false;
-let table = [];
-let leadingSuit = null;
-let scores = {};
-let round = 1;
+// Game state
+const gameState = {
+  players: [],
+  currentTurn: 0,
+  gameInProgress: false,
+  table: [],
+  leadingSuit: null,
+  scores: {},
+  round: 1,
+  trickCount: 0
+};
 
 io.on("connection", (socket) => {
   socket.on("join", (name, callback) => {
-    if (players.length >= 4) return callback({ error: "Room full" });
-    players.push({ id: socket.id, name, hand: [], score: 0 });
-    scores[socket.id] = scores[socket.id] || 0;
+    if (gameState.players.length >= 4) {
+      return callback({ error: "Room full" });
+    }
+    
+    const player = { id: socket.id, name, hand: [], score: 0 };
+    gameState.players.push(player);
+    gameState.scores[socket.id] = gameState.scores[socket.id] || 0;
 
-    // Emit only sanitized player info (no full hands) to reduce bandwidth
     io.emit("playerList", sanitizePlayers());
     callback({ id: socket.id });
 
-    if (players.length === 4) startGame();
+    if (gameState.players.length === 4) startGame();
   });
 
   socket.on("playCard", (card, callback) => {
-    const player = players[currentTurn];
-    if (!player || player.id !== socket.id)
+    const player = gameState.players[gameState.currentTurn];
+    if (!player || player.id !== socket.id) {
       return callback({ error: "Not your turn" });
-
-    const idx = player.hand.indexOf(card);
-    if (idx === -1) return callback({ error: "Card not found" });
-
-    // Enforce following suit
-    const suit = card.split(" of ")[1];
-    if (leadingSuit && suit !== leadingSuit) {
-      const hasSuit = player.hand.some((c) => c.endsWith(leadingSuit));
-      if (hasSuit)
-        return callback({ error: `You must follow ${leadingSuit}` });
     }
 
-    player.hand.splice(idx, 1);
-    table.push({ playerId: socket.id, card });
+    const cardIndex = player.hand.findIndex(c => c === card);
+    if (cardIndex === -1) return callback({ error: "Card not found" });
+
+    // Validate suit following
+    const suit = card.split(" of ")[1];
+    if (gameState.leadingSuit && suit !== gameState.leadingSuit) {
+      const hasLeadingSuit = player.hand.some(c => c.endsWith(gameState.leadingSuit));
+      if (hasLeadingSuit) {
+        return callback({ error: `You must follow ${gameState.leadingSuit}` });
+      }
+    }
+
+    // Play card
+    player.hand.splice(cardIndex, 1);
+    gameState.table.push({ playerId: socket.id, card });
+    
+    if (gameState.table.length === 1) {
+      gameState.leadingSuit = suit;
+    }
+
     io.emit("cardPlayed", { playerId: socket.id, card });
 
-    if (table.length === 1) leadingSuit = suit;
-
-    if (table.length === 4) {
+    if (gameState.table.length === 4) {
       endTrick();
     } else {
       nextTurn();
@@ -62,145 +75,159 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    players = players.filter((p) => p.id !== socket.id);
+    gameState.players = gameState.players.filter(p => p.id !== socket.id);
     io.emit("reset");
     resetGame();
   });
 });
 
 function startGame() {
-  gameInProgress = true;
-  table = [];
-  leadingSuit = null;
-  currentTurn = 0;
+  gameState.gameInProgress = true;
+  gameState.table = [];
+  gameState.leadingSuit = null;
+  gameState.currentTurn = 0;
+  gameState.trickCount = 0;
 
   const deck = shuffleDeck(createDeck());
-  const hands = [[], [], [], []];
-  for (let i = 0; i < 52; i++) {
-    hands[i % 4].push(deck[i]);
-  }
-
-  players.forEach((p, i) => {
-    p.hand = hands[i];
-    io.to(p.id).emit("yourCards", p.hand);
+  
+  // Distribute cards more efficiently
+  gameState.players.forEach((player, index) => {
+    player.hand = deck.slice(index * 13, (index + 1) * 13);
+    io.to(player.id).emit("yourCards", player.hand);
   });
 
-  io.emit("message", `🕹️ Round ${round} started!`);
+  io.emit("message", `🕹️ Round ${gameState.round} started!`);
   updateGameState();
 }
 
 function nextTurn() {
-  currentTurn = (currentTurn + 1) % 4;
+  gameState.currentTurn = (gameState.currentTurn + 1) % 4;
   updateGameState();
 }
 
 function endTrick() {
-  const suit = leadingSuit;
-  let winning = table[0];
+  const trickWinner = determineTrickWinner();
+  const points = calculatePoints(gameState.table);
+  
+  trickWinner.score += points;
+  gameState.scores[trickWinner.id] += points;
+  gameState.trickCount++;
+
+  io.emit("trickWon", { 
+    winnerId: trickWinner.id, 
+    winnerName: trickWinner.name,
+    taken: gameState.table.map(t => t.card),
+    points 
+  });
+
+  // Reset trick
+  gameState.table = [];
+  gameState.leadingSuit = null;
+  gameState.currentTurn = gameState.players.findIndex(p => p.id === trickWinner.id);
+
+  updateGameState();
+
+  // Check if round is complete (all 13 tricks played)
+  if (gameState.trickCount === 13) {
+    endRound();
+  }
+}
+
+function determineTrickWinner() {
+  const suit = gameState.leadingSuit;
+  let winningPlay = gameState.table[0];
   const rankOrder = {
     "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7,
     "8": 8, "9": 9, "10": 10, J: 11, Q: 12, K: 13, A: 14,
   };
 
-  // Find highest card of the leading suit
-  for (const play of table) {
-    const [rank, , s] = play.card.split(" ");
-    if (s === suit && rankOrder[rank] > rankOrder[winning.card.split(" ")[0]]) {
-      winning = play;
+  gameState.table.forEach(play => {
+    const [rank, , playSuit] = play.card.split(" ");
+    const [winningRank] = winningPlay.card.split(" ");
+    
+    if (playSuit === suit && rankOrder[rank] > rankOrder[winningRank]) {
+      winningPlay = play;
     }
-  }
+  });
 
-  const winner = players.find((p) => p.id === winning.playerId);
-  const points = calculatePoints(table);
-  winner.score += points;
-  scores[winner.id] += points;
-
-  io.emit("trickWon", { winnerId: winner.id, taken: table.map((t) => t.card) });
-
-  // Reset trick and set next turn to winner
-  table = [];
-  leadingSuit = null;
-  currentTurn = players.findIndex((p) => p.id === winner.id);
-
-  // Broadcast state once (sanitized players) to reduce duplicate emits
-  updateGameState();
-
-  // If all cards played, round ends
-  if (players.every((p) => p.hand.length === 0)) {
-    endRound();
-  }
+  return gameState.players.find(p => p.id === winningPlay.playerId);
 }
 
-function calculatePoints(cards) {
-  let pts = 0;
-
-  for (const entry of cards) {
-    const c = typeof entry === "string" ? entry : entry.card;
-
-    if (!c || typeof c !== "string") continue;
-
-    // Deck entries are like "Q of Spades" and "10 of Hearts"
-    if (c.endsWith(" of Hearts")) pts += 1;
-    if (c === "Q of Spades" || c === "Queen of Spades") pts += 12;
-  }
-
-  return pts;
+function calculatePoints(plays) {
+  return plays.reduce((total, entry) => {
+    const card = typeof entry === "string" ? entry : entry.card;
+    
+    if (!card || typeof card !== "string") return total;
+    
+    if (card.endsWith(" of Hearts")) total += 1;
+    if (card === "Q of Spades" || card === "Queen of Spades") total += 13;
+    
+    return total;
+  }, 0);
 }
 
 function endRound() {
-  io.emit("roundEnd", {
-    players: players.map((p) => ({
+  // Emit round end with comprehensive data
+  const roundResults = {
+    players: gameState.players.map(p => ({
       id: p.id,
       name: p.name,
       roundPoints: p.score,
-      totalScore: scores[p.id],
+      totalScore: gameState.scores[p.id],
     })),
-  });
+    round: gameState.round
+  };
 
-  // Reset per-round fields
-  players.forEach((p) => (p.score = 0));
-  table = [];
-  leadingSuit = null;
-  currentTurn = 0;
-  gameInProgress = false;
-  round++;
+  io.emit("roundEnd", roundResults);
+  
+  // Reset for next round
+  gameState.players.forEach(p => p.score = 0);
+  gameState.table = [];
+  gameState.leadingSuit = null;
+  gameState.currentTurn = 0;
+  gameState.gameInProgress = false;
+  gameState.trickCount = 0;
+  gameState.round++;
 
-  // Delay before next round
+  // Start next round
   setTimeout(() => {
-    io.emit("message", `🃏 Starting Round ${round}...`);
+    io.emit("message", `🃏 Starting Round ${gameState.round}...`);
     startGame();
-  }, 3000);
+  }, 5000); // Increased delay for better UX
 }
 
 function updateGameState() {
   io.emit("gameState", {
-    currentTurnPlayerId: players[currentTurn]?.id,
-    // Send only sanitized player data to clients (no hands)
+    currentTurnPlayerId: gameState.players[gameState.currentTurn]?.id,
     players: sanitizePlayers(),
-    trick: table,
+    trick: gameState.table,
+    round: gameState.round,
+    trickCount: gameState.trickCount
   });
 }
 
-// Return a lightweight view of players to avoid sending full hands to all clients
 function sanitizePlayers() {
-  return players.map((p) => ({
+  return gameState.players.map(p => ({
     id: p.id,
     name: p.name,
-    // per-round score
     score: p.score,
-    // cumulative total score across rounds
-    totalScore: scores[p.id] || 0,
-    handCount: Array.isArray(p.hand) ? p.hand.length : 0,
+    totalScore: gameState.scores[p.id] || 0,
+    handCount: p.hand.length,
   }));
 }
 
 function resetGame() {
-  players = [];
-  currentTurn = 0;
-  table = [];
-  leadingSuit = null;
-  gameInProgress = false;
+  Object.assign(gameState, {
+    players: [],
+    currentTurn: 0,
+    gameInProgress: false,
+    table: [],
+    leadingSuit: null,
+    scores: {},
+    round: 1,
+    trickCount: 0
+  });
 }
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
