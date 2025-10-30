@@ -216,59 +216,51 @@ button:disabled {
   color: var(--text-dark);
 }
 
-/* Card styling - more realistic */
+/* Card styling - simple */
 .card {
   width: 70px;
   height: 100px;
   border-radius: 8px;
   background: var(--card-white);
   border: 1px solid var(--card-border);
-  display: inline-flex;
-  justify-content: center;
+  display: flex;
   align-items: center;
-  font-size: 26px;
+  justify-content: center;
   font-weight: bold;
   cursor: pointer;
-  box-shadow: 0 4px 8px var(--shadow-medium);
-  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px var(--shadow-light);
+  transition: all 0.2s ease;
   user-select: none;
-  position: relative;
-  overflow: hidden;
   margin: 5px;
-}
-
-.card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 100%);
-  border-radius: 7px;
+  font-size: 24px;
 }
 
 .card:hover {
-  transform: scale(1.1) rotate(1deg);
-  box-shadow: 0 6px 12px var(--shadow-medium);
-  z-index: 10;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px var(--shadow-medium);
+  border-color: var(--accent-gold);
 }
 
 .card.selected {
-  transform: translateY(-10px);
-  box-shadow: 0 0 15px var(--accent-gold);
+  transform: translateY(-5px);
+  box-shadow: 0 0 10px var(--accent-gold);
   border-color: var(--accent-gold);
 }
 
 /* Suit colors */
 .hearts, .diamonds {
   color: var(--red-suit);
-  text-shadow: 0 1px 2px var(--shadow-light);
 }
 
 .spades, .clubs {
   color: var(--black-suit);
-  text-shadow: 0 1px 2px var(--shadow-light);
+}
+
+/* Mini Grid pattern adjustments */
+.hand.pattern-grid .card {
+  width: 44px;
+  height: 66px;
+  font-size: 16px;
 }
 
 /* Game table area - more realistic felt */

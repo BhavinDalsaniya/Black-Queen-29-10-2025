@@ -47,7 +47,9 @@ function renderCard(cardName) {
   const suitName = parts[2];
   const suitSymbol = suitSymbols[suitName] || "";
 
-  return `<div class="card ${suitName?.toLowerCase() || ''}">${rank}${suitSymbol}</div>`;
+  return `<div class="card ${suitName?.toLowerCase() || ''}">
+    <div class="card-content">${rank} ${suitSymbol}</div>
+  </div>`;
 }
 
 // ✅ Join game
