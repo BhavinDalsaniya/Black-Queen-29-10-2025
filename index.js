@@ -18,8 +18,29 @@ const gameState = {
   leadingSuit: null,
   scores: {},
   round: 1,
-  trickCount: 0
+  trickCount: 0,
+  handSize: 0
 };
+
+// Helper: sort a hand of cards by suit then rank
+function sortHand(hand) {
+  const rankOrder = {
+    "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7,
+    "8": 8, "9": 9, "10": 10, J: 11, Q: 12, K: 13, A: 14,
+  };
+  const suitPriority = { Clubs: 0, Diamonds: 1, Hearts: 2, Spades: 3 };
+
+  hand.sort((a, b) => {
+    // a, b are strings like "Q of Spades"
+    const [rankA, , suitA] = a.split(" ");
+    const [rankB, , suitB] = b.split(" ");
+
+    const suitDiff = (suitPriority[suitA] || 0) - (suitPriority[suitB] || 0);
+    if (suitDiff !== 0) return suitDiff;
+
+    return (rankOrder[rankA] || 0) - (rankOrder[rankB] || 0);
+  });
+}
 
 io.on("connection", (socket) => {
   socket.on("join", (name, callback) => {
@@ -88,11 +109,18 @@ function startGame() {
   gameState.currentTurn = 0;
   gameState.trickCount = 0;
 
-  const deck = shuffleDeck(createDeck());
-  
-  // Distribute cards more efficiently
+  // Use two full decks (104 cards) so each player receives 26
+  const deck = shuffleDeck(createDeck().concat(createDeck()));
+
+  // Compute hand size dynamically (deck length divided by players)
+  const handSize = Math.floor(deck.length / gameState.players.length) || 0;
+  gameState.handSize = handSize;
+
+  // Distribute cards and sort each player's hand before sending
   gameState.players.forEach((player, index) => {
-    player.hand = deck.slice(index * 13, (index + 1) * 13);
+    const hand = deck.slice(index * handSize, (index + 1) * handSize);
+    sortHand(hand);
+    player.hand = hand;
     io.to(player.id).emit("yourCards", player.hand);
   });
 
@@ -127,8 +155,8 @@ function endTrick() {
 
   updateGameState();
 
-  // Check if round is complete (all 13 tricks played)
-  if (gameState.trickCount === 13) {
+  // Check if round is complete (all tricks played)
+  if (gameState.trickCount === gameState.handSize) {
     endRound();
   }
 }

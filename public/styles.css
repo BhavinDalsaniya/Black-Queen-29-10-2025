@@ -104,6 +104,39 @@ button:disabled {
   border: 1px solid rgba(255,255,255,0.1);
 }
 
+/* Hand specific layout - make space-efficient for large hands */
+.hand {
+  /* Base hand layout: allow wrapping but avoid large scrollbars */
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  align-items: center;
+  padding: 10px;
+  max-height: none; /* layouts below will control height */
+}
+
+/* PATTERN 3: Mini grid - many small cards in grid layout */
+.hand.pattern-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+  gap: 6px;
+  justify-items: center;
+  align-items: center;
+}
+.hand.pattern-grid .card {
+  width: 44px;
+  height: 66px;
+  font-size: 12px;
+}
+
+/* Grid-specific hover: remove outside border/elevation for clean compact look */
+.hand.pattern-grid .card:hover {
+  transform: none;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.12);
+  border-color: rgba(255,255,255,0.06);
+}
+
 /* Scoreboard specific styles */
 .scoreboard {
   position: relative;

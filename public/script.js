@@ -183,11 +183,17 @@ function renderHand() {
   }
   
   renderHandTimeout = setTimeout(() => {
+    // Use grid pattern for large hands (>13) and default grid rendering
+    handDiv.classList.remove('pattern-grid');
+    if (Array.isArray(myHand) && myHand.length > 13) {
+      handDiv.classList.add('pattern-grid');
+    }
+
     handDiv.innerHTML = "";
     const frag = document.createDocumentFragment();
     for (const c of myHand) {
-      const el = document.createElement("div");
-      el.className = "card-item";
+      const el = document.createElement('div');
+      el.className = 'card-item';
       el.innerHTML = renderCard(c);
       el.onclick = () => playCard(c);
       frag.appendChild(el);
