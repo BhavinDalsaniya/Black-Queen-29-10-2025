@@ -196,11 +196,13 @@ function renderHand() {
 
     handDiv.innerHTML = "";
     const frag = document.createDocumentFragment();
-    for (const c of myHand) {
+    for (let i = 0; i < myHand.length; i++) {
+      const c = myHand[i];
       const el = document.createElement('div');
       el.className = 'card-item';
       el.innerHTML = renderCard(c);
-      el.onclick = () => playCard(c);
+      // Pass the index so we can remove exactly this card instance (handles duplicates)
+      el.onclick = () => playCard(c, i);
       frag.appendChild(el);
     }
     handDiv.appendChild(frag);
@@ -242,10 +244,20 @@ function renderScoreboard(players, currentTurnId = null) {
 }
 
 // ✅ Play card action
-function playCard(card) {
+function playCard(card, index) {
   socket.emit("playCard", card, (res) => {
     if (res && res.error) return alert(res.error);
-    myHand = myHand.filter((c) => c !== card);
+
+    // Remove only the single played card instance from local hand.
+    // Prefer to use the index (fast and precise). If index is stale or doesn't match,
+    // fall back to removing the first matching instance.
+    if (typeof index === 'number' && myHand[index] === card) {
+      myHand.splice(index, 1);
+    } else {
+      const idx = myHand.findIndex(c => c === card);
+      if (idx !== -1) myHand.splice(idx, 1);
+    }
+
     renderHand();
   });
 }
