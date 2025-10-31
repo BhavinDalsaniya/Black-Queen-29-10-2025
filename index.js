@@ -172,9 +172,13 @@ function determineTrickWinner() {
   gameState.table.forEach(play => {
     const [rank, , playSuit] = play.card.split(" ");
     const [winningRank] = winningPlay.card.split(" ");
-    
-    if (playSuit === suit && rankOrder[rank] > rankOrder[winningRank]) {
-      winningPlay = play;
+
+    // If the play matches the leading suit
+    if (playSuit === suit) {
+      // If rank is higher OR rank is equal (later play wins ties), choose this play
+      if (rankOrder[rank] >= rankOrder[winningRank]) {
+        winningPlay = play;
+      }
     }
   });
 
