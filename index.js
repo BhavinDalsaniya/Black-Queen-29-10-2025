@@ -111,14 +111,27 @@ io.on("connection", (socket) => {
 
     io.emit("cardPlayed", { playerId: socket.id, card });
 
-    if (gameState.table.length === 4) {
-      setTimeout(() => endTrick(), 5000);
-      // await new Promise(resolve => setTimeout(resolve, 5000));
-      // endTrick();
+
+    const trickComplete = gameState.table.length === gameState.players.length;
+
+    if (trickComplete) {
+      // Let clients see the full trick before resolving it
+      updateGameState();
+      setTimeout(() => {
+        endTrick();
+      }, 4000);
     } else {
-      // await new Promise(resolve => setTimeout(resolve, 5000));
       nextTurn();
     }
+
+    // if (gameState.table.length === 4) {
+    //   setTimeout(() => endTrick(), 5000);
+    //   // await new Promise(resolve => setTimeout(resolve, 5000));
+    //   // endTrick();
+    // } else {
+    //   // await new Promise(resolve => setTimeout(resolve, 5000));
+    //   nextTurn();
+    // }
 
     callback({ success: true });
   });
@@ -215,7 +228,12 @@ function endTrick() {
 
   // Check if round is complete (all tricks played)
   if (gameState.trickCount === gameState.handSize) {
+    setTimeout(() => {
     endRound();
+  }, 5000); // 5 sec delay
+    
+    
+    // endRound();
   }
 }
 
