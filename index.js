@@ -112,8 +112,11 @@ io.on("connection", (socket) => {
     io.emit("cardPlayed", { playerId: socket.id, card });
 
     if (gameState.table.length === 4) {
-      endTrick();
+      setTimeout(() => endTrick(), 5000);
+      // await new Promise(resolve => setTimeout(resolve, 5000));
+      // endTrick();
     } else {
+      // await new Promise(resolve => setTimeout(resolve, 5000));
       nextTurn();
     }
 
